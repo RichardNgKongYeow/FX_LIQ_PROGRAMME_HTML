@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-contract PFXToken {
+contract PeceiptToken {
     string  public name = "PFX Token";
     string  public symbol = "PFX";
     uint256 public totalSupply = 1000000000000000000000000; // 1 million tokens
