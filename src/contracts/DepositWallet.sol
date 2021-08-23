@@ -89,7 +89,7 @@ contract DepositWallet {
         }
     }
     // 3. unstake tokens
-    function unstakeTokens() public{
+    function unstakeTokens(uint _amount) public{
         // fetch staking balance
         uint balance=stakingBalance[msg.sender];
     
@@ -97,14 +97,15 @@ contract DepositWallet {
         require(balance > 0, "staking balance cannot be 0");
 
         // transfer Mock Tether Tokens  to this contract for staking
-        tetherToken.transfer(msg.sender,balance);
-        peceiptToken.transferFrom(msg.sender, address(this), balance);
+        tetherToken.transfer(msg.sender, _amount);
+        peceiptToken.transferFrom(msg.sender, address(this), _amount);
 
         // reset staking balance
-        stakingBalance[msg.sender]=0;
+        stakingBalance[msg.sender]=stakingBalance[msg.sender]-_amount;
 
         // Update staking status
         isStaking[msg.sender]=false;
+        
     }
 
 

@@ -1,4 +1,4 @@
-const TokenFarm = artifacts.require('TokenFarm')
+const DepositWallet = artifacts.require('DepositWallet')
 
 module.exports = async function(callback) {
   let depositWallet = await DepositWallet.deployed()

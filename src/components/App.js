@@ -1,8 +1,8 @@
 import React, { Component } from 'react'
 import Web3 from 'web3'
-import DaiToken from '../abis/DaiToken.json'
-import DappToken from '../abis/DappToken.json'
-import TokenFarm from '../abis/TokenFarm.json'
+import TetherToken from '../abis/TetherToken.json'
+import PeceiptToken from '../abis/PeceiptToken.json'
+import DepositWallet from '../abis/DepositWallet.json'
 import Navbar from './Navbar'
 import Main from './Main'
 import './App.css'
@@ -22,37 +22,38 @@ class App extends Component {
 
     const networkId = await web3.eth.net.getId()
 
-    // Load DaiToken
-    const daiTokenData = DaiToken.networks[networkId]
-    if(daiTokenData) {
-      const daiToken = new web3.eth.Contract(DaiToken.abi, daiTokenData.address)
-      this.setState({ daiToken })
-      let daiTokenBalance = await daiToken.methods.balanceOf(this.state.account).call()
-      this.setState({ daiTokenBalance: daiTokenBalance.toString() })
+    // Load tetherToken
+
+    const tetherTokenData = TetherToken.networks[networkId]
+    if(tetherTokenData) {
+      const tetherToken = new web3.eth.Contract(TetherToken.abi, tetherTokenData.address)
+      this.setState({ tetherToken })
+      let tetherTokenBalance = await tetherToken.methods.balanceOf(this.state.account).call()
+      this.setState({ tetherTokenBalance: tetherTokenBalance.toString() })
     } else {
-      window.alert('DaiToken contract not deployed to detected network.')
+      window.alert('TetherToken contract not deployed to detected network.')
     }
 
-    // Load DappToken
-    const dappTokenData = DappToken.networks[networkId]
-    if(dappTokenData) {
-      const dappToken = new web3.eth.Contract(DappToken.abi, dappTokenData.address)
-      this.setState({ dappToken })
-      let dappTokenBalance = await dappToken.methods.balanceOf(this.state.account).call()
-      this.setState({ dappTokenBalance: dappTokenBalance.toString() })
+    // Load PeceiptToken
+    const peceiptTokenData = PeceiptToken.networks[networkId]
+    if(peceiptTokenData) {
+      const peceiptToken = new web3.eth.Contract(PeceiptToken.abi, peceiptTokenData.address)
+      this.setState({ peceiptToken })
+      let peceiptTokenBalance = await peceiptToken.methods.balanceOf(this.state.account).call()
+      this.setState({ peceiptTokenBalance: peceiptTokenBalance.toString() })
     } else {
-      window.alert('DappToken contract not deployed to detected network.')
+      window.alert('PeceiptToken contract not deployed to detected network.')
     }
 
-    // Load TokenFarm
-    const tokenFarmData = TokenFarm.networks[networkId]
-    if(tokenFarmData) {
-      const tokenFarm = new web3.eth.Contract(TokenFarm.abi, tokenFarmData.address)
-      this.setState({ tokenFarm })
-      let stakingBalance = await tokenFarm.methods.stakingBalance(this.state.account).call()
+    // Load DepositWallet
+    const depositWalletData = DepositWallet.networks[networkId]
+    if(depositWalletData) {
+      const depositWallet = new web3.eth.Contract(DepositWallet.abi, depositWalletData.address)
+      this.setState({ depositWallet })
+      let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
       this.setState({ stakingBalance: stakingBalance.toString() })
     } else {
-      window.alert('TokenFarm contract not deployed to detected network.')
+      window.alert('DepositWallet contract not deployed to detected network.')
     }
 
     this.setState({ loading: false })
@@ -73,8 +74,8 @@ class App extends Component {
 
   stakeTokens = (amount) => {
     this.setState({ loading: true })
-    this.state.daiToken.methods.approve(this.state.tokenFarm._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-      this.state.tokenFarm.methods.stakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.stakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
         this.setState({ loading: false })
       })
     })
@@ -82,20 +83,23 @@ class App extends Component {
 
   unstakeTokens = (amount) => {
     this.setState({ loading: true })
-    this.state.tokenFarm.methods.unstakeTokens().send({ from: this.state.account }).on('transactionHash', (hash) => {
-      this.setState({ loading: false })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
     })
   }
-
+  
   constructor(props) {
     super(props)
     this.state = {
       account: '0x0',
-      daiToken: {},
-      dappToken: {},
-      tokenFarm: {},
-      daiTokenBalance: '0',
-      dappTokenBalance: '0',
+      tetherToken: {},
+      peceiptToken: {},
+      depositWallet: {},
+      tetherTokenBalance: '0',
+      peceiptTokenBalance: '0',
       stakingBalance: '0',
       loading: true
     }
@@ -107,8 +111,8 @@ class App extends Component {
       content = <p id="loader" className="text-center">Loading...</p>
     } else {
       content = <Main
-        daiTokenBalance={this.state.daiTokenBalance}
-        dappTokenBalance={this.state.dappTokenBalance}
+        tetherTokenBalance={this.state.tetherTokenBalance}
+        peceiptTokenBalance={this.state.peceiptTokenBalance}
         stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
@@ -123,7 +127,7 @@ class App extends Component {
             <main role="main" className="col-lg-12 ml-auto mr-auto" style={{ maxWidth: '600px' }}>
               <div className="content mr-auto ml-auto">
                 <a
-                  href="http://www.dappuniversity.com/bootcamp"
+                  href="http://www.peceiptuniversity.com/bootcamp"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

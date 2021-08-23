@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import dai from '../dai.png'
+import dai from '../tether.png'
 
 class Main extends Component {
 
@@ -11,13 +11,13 @@ class Main extends Component {
           <thead>
             <tr>
               <th scope="col">Staking Balance</th>
-              <th scope="col">Reward Balance</th>
+              <th scope="col">Receipt Token Balance</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>{window.web3.utils.fromWei(this.props.stakingBalance, 'Ether')} mDAI</td>
-              <td>{window.web3.utils.fromWei(this.props.dappTokenBalance, 'Ether')} DAPP</td>
+              <td>{window.web3.utils.fromWei(this.props.stakingBalance, 'Ether')} mUSDT</td>
+              <td>{window.web3.utils.fromWei(this.props.peceiptTokenBalance, 'Ether')} PFX</td>
             </tr>
           </tbody>
         </table>
@@ -36,7 +36,7 @@ class Main extends Component {
               <div>
                 <label className="float-left"><b>Stake Tokens</b></label>
                 <span className="float-right text-muted">
-                  Balance: {window.web3.utils.fromWei(this.props.daiTokenBalance, 'Ether')}
+                  Balance: {window.web3.utils.fromWei(this.props.tetherTokenBalance, 'Ether')}
                 </span>
               </div>
               <div className="input-group mb-4">
@@ -49,7 +49,7 @@ class Main extends Component {
                 <div className="input-group-append">
                   <div className="input-group-text">
                     <img src={dai} height='32' alt=""/>
-                    &nbsp;&nbsp;&nbsp; mDAI
+                    &nbsp;&nbsp;&nbsp; mUSDT
                   </div>
                 </div>
               </div>
@@ -60,7 +60,10 @@ class Main extends Component {
               className="btn btn-link btn-block btn-sm"
               onClick={(event) => {
                 event.preventDefault()
-                this.props.unstakeTokens()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                this.props.unstakeTokens(amount)
               }}>
                 UN-STAKE...
               </button>
