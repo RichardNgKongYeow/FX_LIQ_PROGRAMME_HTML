@@ -52,6 +52,9 @@ class App extends Component {
       this.setState({ depositWallet })
       let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
       this.setState({ stakingBalance: stakingBalance.toString() })
+
+      let farmInfo=await depositWallet.methods.farmInfo().call()
+      this.setState({ farmInfo })
     } else {
       window.alert('DepositWallet contract not deployed to detected network.')
     }
@@ -90,6 +93,15 @@ class App extends Component {
       })
     })
   }
+  withdrawTether = (amount) => {
+    this.setState({ loading: true })
+    
+    this.state.depositWallet.methods.withdrawTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+  
+  }
   
   constructor(props) {
     super(props)
@@ -101,6 +113,7 @@ class App extends Component {
       tetherTokenBalance: '0',
       peceiptTokenBalance: '0',
       stakingBalance: '0',
+      farmInfo:'0',
       loading: true
     }
   }
@@ -116,6 +129,8 @@ class App extends Component {
         stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
+        farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
       />
     }
 

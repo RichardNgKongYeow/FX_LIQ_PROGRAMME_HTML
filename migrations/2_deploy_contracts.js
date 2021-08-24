@@ -25,4 +25,12 @@ module.exports = async function(deployer, network, accounts) {
     // transfer 100 mock USDT tokens to investor
     // second account in ganache
     await tetherToken.transfer(accounts[1],'100000000000000000000')
+
+    // transfer 100 mock USDT tokens to investor
+    // third account in ganache
+    await tetherToken.transfer(accounts[2],'100000000000000000000')
+
+    // transfer 100 mock USDT tokens to investor
+    // forth account in ganache
+    await tetherToken.transfer(accounts[3],'100000000000000000000')
 };

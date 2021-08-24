@@ -1,1 +1,15 @@
 /* Styles go here */
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.box {
+    position:relative;
+}
+.bet_time {
+    position:absolute;
+    bottom:0;
+    right:0;
+}

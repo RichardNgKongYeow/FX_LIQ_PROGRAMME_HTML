@@ -1,5 +1,4 @@
-pragma solidity ^0.5.0;
-
+pragma solidity ^0.8.0;
 import "./PeceiptToken.sol";
 import "./TetherToken.sol";
 
@@ -19,7 +18,7 @@ contract DepositWallet {
     // hasStaked=[address:True]
     mapping(address=>bool) public hasStaked;
     mapping(address=>bool) public isStaking;
-
+    FarmInfo public farmInfo;
 
     struct StakerInfo {
         uint256 stakingBalance;
@@ -33,7 +32,8 @@ contract DepositWallet {
     struct FarmInfo {
         uint256 blockReward;
         uint256 lastRewardBlock; // Last block number that reward distribution occurs.
-        uint256 farmableSupply; // set in init, total amount of tokens farmable
+        uint256 tetherSupply; // set in init, total amount of tether staked
+        uint256 peceiptInCirculation; // set in init, total amount of tether staked
     }
 
 
@@ -67,12 +67,29 @@ contract DepositWallet {
         // update staking status
         isStaking[msg.sender]=true;
         hasStaked[msg.sender]=true;
+        uint shareofpool;
+        if (farmInfo.peceiptInCirculation==0 && farmInfo.tetherSupply==0){
+            shareofpool=_amount;
+        } else{
+            uint totalpeceipt=farmInfo.peceiptInCirculation;
+            uint totaltether=farmInfo.tetherSupply;
+            shareofpool=_amount*totalpeceipt/totaltether;
+        }
+            
 
 
-        peceiptToken.transfer(msg.sender, _amount);
+        // update perceiptincirculation and tethersupply
+        farmInfo.tetherSupply +=_amount;
+
+        // uint256 shareofpool=_amount*(_amount/(_amount+farmInfo.tetherSupply));
+        farmInfo.peceiptInCirculation +=_amount;
+        
+
+        peceiptToken.transfer(msg.sender, shareofpool);
 
 
     }
+    // TODO have to burn LP tokens for the pool if they are 0
 
     // 2. issuing reward tokens right now logic is that u get 1 for every 1 you stake, no block time basis
     function issueTokens()public{
@@ -84,7 +101,7 @@ contract DepositWallet {
             address recipient = stakers[i];
             uint balance = stakingBalance[recipient];
             if(balance > 0){
-                tetherToken.transfer(recipient, balance);
+                peceiptToken.transfer(recipient, balance);
             }
         }
     }
@@ -95,21 +112,34 @@ contract DepositWallet {
     
         // require amount greater than 0
         require(balance > 0, "staking balance cannot be 0");
-
+        uint totalpeceipt=farmInfo.peceiptInCirculation;
+        uint totaltether=farmInfo.tetherSupply;
+        uint256 shareofpool=_amount*totaltether/totalpeceipt;
         // transfer Mock Tether Tokens  to this contract for staking
-        tetherToken.transfer(msg.sender, _amount);
+        tetherToken.transfer(msg.sender, shareofpool);
         peceiptToken.transferFrom(msg.sender, address(this), _amount);
 
         // reset staking balance
         stakingBalance[msg.sender]=stakingBalance[msg.sender]-_amount;
 
         // Update staking status
-        isStaking[msg.sender]=false;
+        if (stakingBalance[msg.sender]==0){
+            isStaking[msg.sender]=false;
+        } else {
+            isStaking[msg.sender]=true;
+        }
+
+        
+        farmInfo.tetherSupply -=shareofpool;
+        farmInfo.peceiptInCirculation -=_amount;
         
     }
-
-
-
+    function withdrawTether (uint _amount) public{
+        require(_amount > 0, "amount cannot be 0");
+        require(msg.sender==owner, "caller must be the owner");
+        tetherToken.transfer(msg.sender, _amount);
+        farmInfo.tetherSupply -=_amount;
+    }
 
 
 
