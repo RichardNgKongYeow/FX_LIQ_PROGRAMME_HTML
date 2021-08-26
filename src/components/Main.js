@@ -10,14 +10,17 @@ class Main extends Component {
         <table className="table table-borderless text-muted text-center">
           <thead>
             <tr>
-              <th scope="col">mUSDT Staked</th>
+              {/* <th scope="col">mUSDT Staked</th> */}
               <th scope="col">Receipt Token Balance</th>
+              <th scope="col">Staking timestamp</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>{window.web3.utils.fromWei(this.props.stakingBalance, 'Ether')} mUSDT</td>
+              {/* <td>{window.web3.utils.fromWei(this.props.stakingBalance, 'Ether')} mUSDT</td> */}
               <td>{window.web3.utils.fromWei(this.props.peceiptTokenBalance, 'Ether')} PFX</td>
+              <td>{new Date((this.props.stakerInfo.stakingTimestamp)*1000).toLocaleDateString("en-US")}</td>
+
             </tr>
           </tbody>
         </table>
@@ -68,6 +71,18 @@ class Main extends Component {
               }}>
                 UN-STAKE...
               </button>
+              <button
+              type="submit"
+              className="btn btn-link btn-block btn-sm bet_time"
+              onClick={(event) => {
+                event.preventDefault()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                this.props.unstakeTokensWithPenalty(amount)
+              }}>
+                un-stake w PENALTY!
+              </button>
 
               
           </div>
@@ -78,15 +93,34 @@ class Main extends Component {
           <thead>
             <tr>
               <th scope="col">Total Tether Staked In Pool</th>
-              <th scope="col">Total Peceipt Token In Ciculation</th>
-              <th scope="col">Exchange rate PFX/mUSDT</th>
+              <th scope="col">Total Receipt Token In Ciculation</th>
+              <th scope="col">Lock In Duration</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>{window.web3.utils.fromWei(this.props.farmInfo.tetherSupply, 'Ether')} mUSDT</td>
               <td>{window.web3.utils.fromWei(this.props.farmInfo.peceiptInCirculation, 'Ether')} PFX</td>
-              <td>{(this.props.farmInfo.peceiptInCirculation/this.props.farmInfo.tetherSupply)} PFX/mUSDT</td>
+              <td>20 Days</td>
+
+            </tr>
+          </tbody>
+        </table>
+        <table className="table table-borderless text-muted text-center">
+          <thead>
+            <tr>
+
+              <th scope="col">1 mUSDT = </th>
+              <th scope="col">1 PFX = </th>
+              <th scope="col">Tether Tokens In Contract</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              
+              <td>{(this.props.farmInfo.peceiptInCirculation/this.props.farmInfo.tetherSupply)} PFX</td>
+              <td>{(this.props.farmInfo.tetherSupply/this.props.farmInfo.peceiptInCirculation)} mUSDT</td>
+              <td>{window.web3.utils.fromWei(this.props.tetherTokenInContract, 'Ether')} mUSDT</td>
             </tr>
           </tbody>
         </table>
@@ -102,6 +136,18 @@ class Main extends Component {
                 this.props.withdrawTether(amount)
               }}>
                 Withdraw Tether
+              </button>
+              <button
+              type="submit"
+              className="btn btn-link btn-block btn-sm bet_time"
+              onClick={(event) => {
+                event.preventDefault()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                this.props.addTether(amount)
+              }}>
+                Add Tether
               </button>
       </div>
       

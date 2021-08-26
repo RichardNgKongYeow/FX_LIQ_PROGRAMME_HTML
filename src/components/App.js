@@ -48,13 +48,18 @@ class App extends Component {
     // Load DepositWallet
     const depositWalletData = DepositWallet.networks[networkId]
     if(depositWalletData) {
+      const tetherToken = new web3.eth.Contract(TetherToken.abi, tetherTokenData.address)
       const depositWallet = new web3.eth.Contract(DepositWallet.abi, depositWalletData.address)
       this.setState({ depositWallet })
-      let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
-      this.setState({ stakingBalance: stakingBalance.toString() })
+      // let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
+      // this.setState({ stakingBalance: stakingBalance.toString() })
 
       let farmInfo=await depositWallet.methods.farmInfo().call()
       this.setState({ farmInfo })
+      let stakerInfo = await depositWallet.methods.stakerInfo(this.state.account).call()
+      this.setState({ stakerInfo })
+      let tetherTokenInContract = await tetherToken.methods.balanceOf(depositWalletData.address).call()
+      this.setState({ tetherTokenInContract })
     } else {
       window.alert('DepositWallet contract not deployed to detected network.')
     }
@@ -93,6 +98,15 @@ class App extends Component {
       })
     })
   }
+  unstakeTokensWithPenalty = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
   withdrawTether = (amount) => {
     this.setState({ loading: true })
     
@@ -101,6 +115,15 @@ class App extends Component {
 
       })
   
+  }
+  addTether = (amount) => {
+    this.setState({ loading: true })
+    this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.depositWallet.methods.addTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+    })
   }
   
   constructor(props) {
@@ -112,25 +135,39 @@ class App extends Component {
       depositWallet: {},
       tetherTokenBalance: '0',
       peceiptTokenBalance: '0',
-      stakingBalance: '0',
+      tetherTokenInContract: '0',
+      // stakingBalance: '0',
       farmInfo:'0',
-      loading: true
+      stakerInfo: '0',
+      loading: true,
+
     }
   }
 
   render() {
     let content
     if(this.state.loading) {
-      content = <p id="loader" className="text-center">Loading...</p>
+      content =
+      <div class="wrap">
+      <div class="loading">
+        <div class="bounceball"></div>
+        <div class="text">ETHEREUM IS A LITTLE SLOW...</div>
+      </div>
+    </div>
     } else {
       content = <Main
         tetherTokenBalance={this.state.tetherTokenBalance}
         peceiptTokenBalance={this.state.peceiptTokenBalance}
-        stakingBalance={this.state.stakingBalance}
+        // stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
         farmInfo={this.state.farmInfo}
         withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        stakerInfo={this.state.stakerInfo}
+        // stakingTimestamp={this.state.stakingTimestamp}
+        tetherTokenInContract={this.state.tetherTokenInContract}
       />
     }
 
@@ -142,7 +179,7 @@ class App extends Component {
             <main role="main" className="col-lg-12 ml-auto mr-auto" style={{ maxWidth: '600px' }}>
               <div className="content mr-auto ml-auto">
                 <a
-                  href="http://www.peceiptuniversity.com/bootcamp"
+                  href="https://www.pundix.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
