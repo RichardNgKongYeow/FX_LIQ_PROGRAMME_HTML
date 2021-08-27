@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import fx_token from '../fx_token.png'
-import Identicon from 'identicon.js';
+// import Identicon from 'identicon.js';
 
 class Navbar extends Component {
 
@@ -28,7 +28,7 @@ class Navbar extends Component {
                 className="ml-2"
                 width='30'
                 height='30'
-                src={`data:image/png;base64,${new Identicon(this.props.account, 30).toString()}`}
+                src={`data:image/png;base64,${new Identicon(this.props.account, 420).toString()}`}
                 alt=""
               />
               : <span></span>

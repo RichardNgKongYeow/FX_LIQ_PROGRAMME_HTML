@@ -22,6 +22,45 @@ contract DepositWallet {
     FarmInfo public farmInfo;
     mapping(address => StakerInfo) public stakerInfo;
 
+    event Staked(
+        address account,
+        uint tetherDeposited,
+        uint lpReceived,
+        uint timeStamp
+  );
+
+    event unStaked(
+        address account,
+        uint lpDeposited,
+        uint tetherReceived,
+        uint timeStamp
+  );
+    event withdraw(
+        address account,
+        uint tetherWithdrawn,
+        uint timeStamp
+  );
+    event add(
+        address account,
+        uint tetherAdded,
+        uint timeStamp
+  );
+    event unstakeWithPenalty(
+        address account,
+        uint lpDeposited,
+        uint tetherReceived,
+        uint timeStamp,
+        uint penalty
+  );
+
+    // event Unstaked(
+    //     address account,
+    //     address token,
+    //     uint amount,
+    //     uint buyrate,
+    //     uint penalty
+    // );
+
     struct StakerInfo {
         uint256 peceiptBalance;
         uint256 stakingTimestamp;
@@ -29,6 +68,7 @@ contract DepositWallet {
         bool hasStaked;
         bool isStaking;
         // uint256 poolShareRatio;
+        uint256 unStakingTimestamp;
     }
 
     struct FarmInfo {
@@ -93,7 +133,7 @@ contract DepositWallet {
         // this is to increment the stakingBalance amount in the array
 
         stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance+shareofpool;
-
+        emit Staked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].stakingTimestamp);
     }
     // TODO have to burn LP tokens for the pool if they are 0
     // have to change this issuetokens
@@ -116,7 +156,7 @@ contract DepositWallet {
     function unstakeTokens(uint _amount) public{
         // fetch staking balance
         uint balance=stakerInfo[msg.sender].peceiptBalance;
-    
+        stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
         // require amount greater than 0
         require(balance > 0, "Receipt Token balance cannot be 0");
         uint256 end = stakerInfo[msg.sender].stakingTimestamp + duration;
@@ -141,6 +181,7 @@ contract DepositWallet {
         // update pool info
         farmInfo.tetherSupply -=shareofpool;
         farmInfo.peceiptInCirculation -=_amount;
+        emit unStaked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].unStakingTimestamp);
         
     }
     function withdrawTether (uint _amount) public{
@@ -148,6 +189,7 @@ contract DepositWallet {
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transfer(msg.sender, _amount);
         farmInfo.tetherSupply -=_amount;
+        emit withdraw(msg.sender, _amount, block.timestamp);
     }
 
     // TODO take this out
@@ -156,10 +198,12 @@ contract DepositWallet {
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transferFrom(msg.sender,address(this), _amount);
         farmInfo.tetherSupply +=_amount;
+        emit add(msg.sender, _amount, block.timestamp);
     }
 
 
     function unstakeTokensWithPenalty(uint _amount) public {
+        stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
         uint256 balance = stakerInfo[msg.sender].peceiptBalance;
         require(balance > 0, "Receipt Token cannot be 0");
         peceiptToken.transferFrom(msg.sender, address(this), _amount); //return lpx token
@@ -172,6 +216,7 @@ contract DepositWallet {
         uint totaltether=farmInfo.tetherSupply;
         uint256 shareofpool=_amount*totaltether/totalpeceipt;
         uint256 withdrawableAmt=shareofpool*(100-penalty)/100;
+        uint256 penaltyamount=shareofpool-withdrawableAmt;
 
         
 
@@ -193,9 +238,32 @@ contract DepositWallet {
         farmInfo.tetherSupply -=withdrawableAmt;
         farmInfo.peceiptInCirculation -=_amount;
 
+        emit unstakeWithPenalty(msg.sender, _amount, withdrawableAmt, stakerInfo[msg.sender].unStakingTimestamp, penaltyamount);
         // getPoolShareRatio();
     }
+    
+    function transferOwnership(address _to, uint256 _amount) public {
+        require(_amount > 0, "amount cannot be 0");
+        require(_to == address(_to), "Invalid address");
+        require(_amount <= stakerInfo[msg.sender].peceiptBalance, "amount less than LP balance");
 
+        peceiptToken.transferFrom(msg.sender, _to, _amount); //transfer lpXToken
+        // update staker fields
+        stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
+        stakerInfo[_to].peceiptBalance=stakerInfo[_to].peceiptBalance+_amount;
+        stakerInfo[_to].stakingTimestamp=stakerInfo[msg.sender].stakingTimestamp;
+
+
+        if (!stakerInfo[_to].hasStaked) {
+            stakers.push(_to);
+        }
+
+        //Update staking status
+        stakerInfo[_to].isStaking = true;
+        stakerInfo[_to].hasStaked = true;
+
+
+    }
 
 
     // 4. issuing reward tokens
