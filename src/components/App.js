@@ -6,6 +6,8 @@ import DepositWallet from '../abis/DepositWallet.json'
 import Navbar from './Navbar'
 import Main from './Main'
 import './App.css'
+import { BrowserRouter as Router,Switch, Route} from 'react-router-dom';
+
 
 class App extends Component {
 
@@ -107,6 +109,15 @@ class App extends Component {
       })
     })
   }
+  transferOwnership = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
   withdrawTether = (amount) => {
     this.setState({ loading: true })
     
@@ -129,7 +140,7 @@ class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      account: '0x0',
+      account: '',
       tetherToken: {},
       peceiptToken: {},
       depositWallet: {},
@@ -165,17 +176,22 @@ class App extends Component {
         withdrawTether={this.withdrawTether}
         addTether={this.addTether}
         unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
         stakerInfo={this.state.stakerInfo}
         // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
       />
+      
     }
 
     return (
+      <Router>
       <div>
+        
         <Navbar account={this.state.account} />
         <div className="container-fluid mt-5">
           <div className="row">
+
             <main role="main" className="col-lg-12 ml-auto mr-auto" style={{ maxWidth: '600px' }}>
               <div className="content mr-auto ml-auto">
                 <a
@@ -185,13 +201,19 @@ class App extends Component {
                 >
                 </a>
 
-                {content}
-
+                {/* {content} */}
+                <Switch>
+                <Route path="/" exact > {content} </Route>
+                <Route path="/StakeForm" exact > {content} </Route>
+              </Switch>
               </div>
             </main>
           </div>
         </div>
+
+        
       </div>
+      </Router>
     );
   }
 }

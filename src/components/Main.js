@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
 import dai from '../tether.png'
 
+
 class Main extends Component {
 
   render() {
     return (
       <div id="content" className="mt-3">
-
         <table className="table table-borderless text-muted text-center">
           <thead>
             <tr>
@@ -83,6 +83,23 @@ class Main extends Component {
               }}>
                 un-stake w PENALTY!
               </button>
+              <button
+              type="submit"
+              className="btn btn-link btn-block btn-sm bet_time"
+              onClick={(event) => {
+                event.preventDefault()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                let address
+                address = this.recipient.value.toString()
+                // let result = window.web3.utils.isAddress(address)
+                // console.log(result)   
+                this.props.transferOwnership(address, amount)
+
+              }}>
+                Transfer LP Tokens
+              </button>
 
               
           </div>
@@ -149,6 +166,7 @@ class Main extends Component {
               }}>
                 Add Tether
               </button>
+              
       </div>
       
     );

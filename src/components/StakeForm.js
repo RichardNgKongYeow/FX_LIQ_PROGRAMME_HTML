@@ -1,80 +1,221 @@
 import React, { Component } from 'react'
-import tokenLogo from '../token-logo.png'
-import ethLogo from '../eth-logo.png'
+import Web3 from 'web3'
+import TetherToken from '../abis/TetherToken.json'
+import PeceiptToken from '../abis/PeceiptToken.json'
+import DepositWallet from '../abis/DepositWallet.json'
+import Navbar from './Navbar'
+import Main from './Main'
+import './App.css'
+import { BrowserRouter as Router,Switch, Route} from 'react-router-dom';
 
-class StakeForm extends Component {
+
+class App extends Component {
+
+  async componentWillMount() {
+    await this.loadWeb3()
+    await this.loadBlockchainData()
+  }
+
+  async loadBlockchainData() {
+    const web3 = window.web3
+
+    const accounts = await web3.eth.getAccounts()
+    this.setState({ account: accounts[0] })
+
+    const networkId = await web3.eth.net.getId()
+
+    // Load tetherToken
+
+    const tetherTokenData = TetherToken.networks[networkId]
+    if(tetherTokenData) {
+      const tetherToken = new web3.eth.Contract(TetherToken.abi, tetherTokenData.address)
+      this.setState({ tetherToken })
+      let tetherTokenBalance = await tetherToken.methods.balanceOf(this.state.account).call()
+      this.setState({ tetherTokenBalance: tetherTokenBalance.toString() })
+    } else {
+      window.alert('TetherToken contract not deployed to detected network.')
+    }
+
+    // Load PeceiptToken
+    const peceiptTokenData = PeceiptToken.networks[networkId]
+    if(peceiptTokenData) {
+      const peceiptToken = new web3.eth.Contract(PeceiptToken.abi, peceiptTokenData.address)
+      this.setState({ peceiptToken })
+      let peceiptTokenBalance = await peceiptToken.methods.balanceOf(this.state.account).call()
+      this.setState({ peceiptTokenBalance: peceiptTokenBalance.toString() })
+    } else {
+      window.alert('PeceiptToken contract not deployed to detected network.')
+    }
+
+    // Load DepositWallet
+    const depositWalletData = DepositWallet.networks[networkId]
+    if(depositWalletData) {
+      const tetherToken = new web3.eth.Contract(TetherToken.abi, tetherTokenData.address)
+      const depositWallet = new web3.eth.Contract(DepositWallet.abi, depositWalletData.address)
+      this.setState({ depositWallet })
+      // let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
+      // this.setState({ stakingBalance: stakingBalance.toString() })
+
+      let farmInfo=await depositWallet.methods.farmInfo().call()
+      this.setState({ farmInfo })
+      let stakerInfo = await depositWallet.methods.stakerInfo(this.state.account).call()
+      this.setState({ stakerInfo })
+      let tetherTokenInContract = await tetherToken.methods.balanceOf(depositWalletData.address).call()
+      this.setState({ tetherTokenInContract })
+    } else {
+      window.alert('DepositWallet contract not deployed to detected network.')
+    }
+
+    this.setState({ loading: false })
+  }
+
+  async loadWeb3() {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum)
+      await window.ethereum.enable()
+    }
+    else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider)
+    }
+    else {
+      window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
+    }
+  }
+
+  stakeTokens = (amount) => {
+    this.setState({ loading: true })
+    this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.stakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+      })
+    })
+  }
+
+  unstakeTokens = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  unstakeTokensWithPenalty = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  transferOwnership = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  withdrawTether = (amount) => {
+    this.setState({ loading: true })
+    
+    this.state.depositWallet.methods.withdrawTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+  
+  }
+  addTether = (amount) => {
+    this.setState({ loading: true })
+    this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.depositWallet.methods.addTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+    })
+  }
+  
   constructor(props) {
     super(props)
     this.state = {
-      output: '0'
+      account: '',
+      tetherToken: {},
+      peceiptToken: {},
+      depositWallet: {},
+      tetherTokenBalance: '0',
+      peceiptTokenBalance: '0',
+      tetherTokenInContract: '0',
+      // stakingBalance: '0',
+      farmInfo:'0',
+      stakerInfo: '0',
+      loading: true,
+
     }
   }
-//buying tokens
+
   render() {
+    let content
+    if(this.state.loading) {
+      content =
+      <div class="wrap">
+      <div class="loading">
+        <div class="bounceball"></div>
+        <div class="text">ETHEREUM IS A LITTLE SLOW...</div>
+      </div>
+    </div>
+    } else {
+      content = <Main
+        tetherTokenBalance={this.state.tetherTokenBalance}
+        peceiptTokenBalance={this.state.peceiptTokenBalance}
+        // stakingBalance={this.state.stakingBalance}
+        stakeTokens={this.stakeTokens}
+        unstakeTokens={this.unstakeTokens}
+        farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
+        stakerInfo={this.state.stakerInfo}
+        // stakingTimestamp={this.state.stakingTimestamp}
+        tetherTokenInContract={this.state.tetherTokenInContract}
+      />
+      
+    }
+
     return (
-      <form className="mb-3" onSubmit={(event) => {
-          event.preventDefault()
-          let amount
-          amount = this.input.value.toString()
-          amount = window.web3.utils.toWei(amount, 'Ether')
-          this.props.buyTokens(amount)
-        }}>
-        <div>
-          <label className="float-left"><b>Input</b></label>
-          <span className="float-right text-muted">
-            Balance: {window.web3.utils.fromWei(this.props.ethBalance, 'Ether')}
-          </span>
-        </div>
-        <div className="input-group mb-4">
-          <input
-            type="text"
-            onChange={(event) => {
-              const amount = this.input.value.toString()
-              //this is to dynamically put in the price as you fill in one side of the ccy pair
-              this.setState({
-                output: amount * 1760
-              })
-            }}
-            ref={(input) => { this.input = input }}
-            className="form-control form-control-lg"
-            placeholder="0"
-            required />
-          <div className="input-group-append">
-            <div className="input-group-text">
-              <img src={ethLogo} height='32' alt=""/>
-              &nbsp;&nbsp;&nbsp; ETH
-            </div>
+      <Router>
+      <div>
+        
+        <Navbar account={this.state.account} />
+        <div className="container-fluid mt-5">
+          <div className="row">
+
+            <main role="main" className="col-lg-12 ml-auto mr-auto" style={{ maxWidth: '600px' }}>
+              <div className="content mr-auto ml-auto">
+                <a
+                  href="https://www.pundix.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                </a>
+
+                {/* {content} */}
+                <Switch>
+                <Route path="/" exact > {content} </Route>
+                <Route path="/StakeForm" exact > {content} </Route>
+              </Switch>
+              </div>
+            </main>
           </div>
         </div>
-        <div>
-          <label className="float-left"><b>Output</b></label>
-          <span className="float-right text-muted">
-            Balance: {window.web3.utils.fromWei(this.props.tokenBalance, 'Ether')}
-          </span>
-        </div>
-        <div className="input-group mb-2">
-          <input
-            type="text"
-            className="form-control form-control-lg"
-            placeholder="0"
-            value={this.state.output}
-            disabled
-          />
-          <div className="input-group-append">
-            <div className="input-group-text">
-              <img src={tokenLogo} height='32' alt=""/>
-              &nbsp; USDT
-            </div>
-          </div>
-        </div>
-        <div className="mb-5">
-          <span className="float-left text-muted">Exchange Rate</span>
-          <span className="float-right text-muted">1 USDT = 1760 </span>
-        </div>
-        <button type="submit" className="btn btn-primary btn-block btn-lg">EXECUTE!</button>
-      </form>
+
+        
+      </div>
+      </Router>
     );
   }
 }
 
-export default BuyForm;
+export default App;
