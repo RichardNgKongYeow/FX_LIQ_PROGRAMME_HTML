@@ -26,12 +26,8 @@ class Navbar extends Component {
         </a>
 
 
-        <NavLink to='/'>
-  
-            </NavLink>
-              <Bars />
               <NavBtn>
-                    <NavBtnLink to='/StakeForm'>STAKE!</NavBtnLink>
+                    <NavBtnLink to='/StakeForm'>STAKE!/UNSTAKE!</NavBtnLink>
                 </NavBtn>
             {/* <NavMenu>
               <NavLink to='/dashboard' activeStyle>
@@ -47,15 +43,13 @@ class Navbar extends Component {
                   Sign Up
               </NavLink>       
             </NavMenu> */}
-                <NavBtn>
-                    <NavBtnLink to='/login'>UN-STAKE...</NavBtnLink>
-                </NavBtn>
+
 
                 <NavBtn>
-                    <NavBtnLink to='/login'>Transfer Ownership</NavBtnLink>
+                    <NavBtnLink to='/TransferOwnership'>Transfer Ownership</NavBtnLink>
                 </NavBtn>
                 <NavBtn>
-                    <NavBtnLink to='/login'>Owner Functions</NavBtnLink>
+                    <NavBtnLink to='/Owner'>Owner Functions</NavBtnLink>
                 </NavBtn>
 
           <ul className="navbar-nav px-3">

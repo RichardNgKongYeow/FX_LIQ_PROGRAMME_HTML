@@ -9,7 +9,7 @@ import './App.css'
 import { BrowserRouter as Router,Switch, Route} from 'react-router-dom';
 
 
-class App extends Component {
+class Owner extends Component {
 
   async componentWillMount() {
     await this.loadWeb3()
@@ -185,7 +185,7 @@ class App extends Component {
     }
 
     return (
-      <Router>
+
       <div>
         
         <Navbar account={this.state.account} />
@@ -201,11 +201,8 @@ class App extends Component {
                 >
                 </a>
 
-                {/* {content} */}
-                <Switch>
-                <Route path="/" exact > {content} </Route>
-                <Route path="/StakeForm" exact > {content} </Route>
-              </Switch>
+                {content}
+
               </div>
             </main>
           </div>
@@ -213,9 +210,9 @@ class App extends Component {
 
         
       </div>
-      </Router>
+
     );
   }
 }
 
-export default App;
+export default Owner;
