@@ -9,7 +9,8 @@ import './App.css'
 import { BrowserRouter as Router,Switch, Route} from 'react-router-dom';
 
 
-class StakeForm extends Component {
+
+class App extends Component {
 
   async componentWillMount() {
     await this.loadWeb3()
@@ -91,6 +92,51 @@ class StakeForm extends Component {
     })
   }
 
+  unstakeTokens = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  unstakeTokensWithPenalty = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  transferOwnership = (amount) => {
+    this.setState({ loading: true })
+    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+
+      })
+    })
+  }
+  withdrawTether = (amount) => {
+    this.setState({ loading: true })
+    
+    this.state.depositWallet.methods.withdrawTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+  
+  }
+  addTether = (amount) => {
+    this.setState({ loading: true })
+    this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.depositWallet.methods.addTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+    })
+  }
   
   constructor(props) {
     super(props)
@@ -126,16 +172,22 @@ class StakeForm extends Component {
         peceiptTokenBalance={this.state.peceiptTokenBalance}
         // stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
+        unstakeTokens={this.unstakeTokens}
         farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
         stakerInfo={this.state.stakerInfo}
         // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
       />
+
       
     }
 
     return (
-
+      <Router>
       <div>
         
         <Navbar account={this.state.account} />
@@ -150,9 +202,14 @@ class StakeForm extends Component {
                   rel="noopener noreferrer"
                 >
                 </a>
-
-                {content}
-
+                  {/* {content} */}
+                  <Switch>
+                    {/* <Route path="/" exact > {content} </Route> */}
+                    <Route path="/" exact > {content} </Route>
+                    <Route path="/PRTokenDistribution/" exact > {content} </Route>
+                    {/* <Route path="/PRTokenDistribution/NPXSXEMigration/" exact > {content2} </Route>
+                    <Route path="/PRTokenDistribution/PurseDistribution/" exact > {content3} </Route> */}
+                  </Switch>
               </div>
             </main>
           </div>
@@ -160,9 +217,9 @@ class StakeForm extends Component {
 
         
       </div>
-
+      </Router>
     );
   }
 }
 
-export default StakeForm;
+export default App;

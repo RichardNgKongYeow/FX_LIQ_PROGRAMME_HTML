@@ -1,12 +1,20 @@
 import React, { Component } from 'react'
 import dai from '../tether.png'
-
+// import ButtonGroup from 'react-bootstrap/ButtonGroup'
+// import Button from '@material-ui/core/Button';
 
 class Main extends Component {
 
   render() {
     return (
       <div id="content" className="mt-3">
+          {/* <div className="text-center">
+            <ButtonGroup>
+                <Button variant="contained" color="default" component={Link} to="/PRTokenDistribution/">Liquidity Pool</Button>
+                <Button variant="outlined" color="default" component={Link} to="/PRTokenDistribution/NPXSXEMigration/">Migrate NPXSXEM</Button>
+                <Button variant="outlined" color="default" component={Link} to="/PRTokenDistribution/PurseDistribution/">Purse Distribution</Button>
+            </ButtonGroup>
+        </div> */}
         <table className="table table-borderless text-muted text-center">
           <thead>
             <tr>

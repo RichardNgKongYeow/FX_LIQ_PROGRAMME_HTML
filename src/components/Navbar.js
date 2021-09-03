@@ -2,19 +2,11 @@ import React, { Component } from 'react'
 import fx_token from '../fx_token.png'
 import Identicon from 'identicon.js';
 
-import {
-  Nav,
-  NavLink,
-  Bars,
-  NavMenu,
-  NavBtn,
-  NavBtnLink
-} from './NavMenu'
 
 class Navbar extends Component {
   render() {
       return (
-        <Nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+        <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
         <a
           className="navbar-brand col-sm-3 col-md-2 mr-0"
           href="https://www.pundix.com/"
@@ -24,33 +16,6 @@ class Navbar extends Component {
           <img src={fx_token} width="30" height="30" className="d-inline-block align-top" alt="" />
           &nbsp; Trading Wallet
         </a>
-
-
-              <NavBtn>
-                    <NavBtnLink to='/StakeForm'>STAKE!/UNSTAKE!</NavBtnLink>
-                </NavBtn>
-            {/* <NavMenu>
-              <NavLink to='/dashboard' activeStyle>
-                  Mkt Dashboard
-              </NavLink>
-              <NavLink to='/tradenow' activeStyle>
-                  Trade Now
-              </NavLink>
-              <NavLink to='/about' activeStyle>
-                  About the team
-              </NavLink>
-              <NavLink to='/signup' activeStyle>
-                  Sign Up
-              </NavLink>       
-            </NavMenu> */}
-
-
-                <NavBtn>
-                    <NavBtnLink to='/TransferOwnership'>Transfer Ownership</NavBtnLink>
-                </NavBtn>
-                <NavBtn>
-                    <NavBtnLink to='/Owner'>Owner Functions</NavBtnLink>
-                </NavBtn>
 
           <ul className="navbar-nav px-3">
           <li className="nav-item text-nowrap d-none d-sm-none d-sm-block">
@@ -70,7 +35,7 @@ class Navbar extends Component {
             }
           </li>
         </ul>
-      </Nav>
+      </nav>
 
       );
    
