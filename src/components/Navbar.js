@@ -1,6 +1,14 @@
 import React, { Component } from 'react'
 import fx_token from '../fx_token.png'
 import Identicon from 'identicon.js';
+import {
+  Nav,
+  NavLink,
+  Bars,
+  NavMenu,
+  NavBtn,
+  NavBtnLink
+} from './NavMenu'
 
 
 class Navbar extends Component {
@@ -16,7 +24,15 @@ class Navbar extends Component {
           <img src={fx_token} width="30" height="30" className="d-inline-block align-top" alt="" />
           &nbsp; Trading Wallet
         </a>
-
+        <NavBtnLink to='/Stake' activeStyle>
+                  Stake
+              </NavBtnLink>
+              <NavBtnLink to='/Unstake' activeStyle>
+                  Unstake
+              </NavBtnLink>
+              <NavBtnLink to='/Owner' activeStyle>
+                  Owner
+              </NavBtnLink>
           <ul className="navbar-nav px-3">
           <li className="nav-item text-nowrap d-none d-sm-none d-sm-block">
             <small className="text-secondary">

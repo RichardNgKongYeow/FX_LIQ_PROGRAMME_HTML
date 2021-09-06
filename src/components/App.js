@@ -5,9 +5,11 @@ import PeceiptToken from '../abis/PeceiptToken.json'
 import DepositWallet from '../abis/DepositWallet.json'
 import Navbar from './Navbar'
 import Main from './Main'
+import Stake from './Stake'
+import Unstake from './Unstake'
+import Owner from './Owner'
 import './App.css'
 import { BrowserRouter as Router,Switch, Route} from 'react-router-dom';
-
 
 
 class App extends Component {
@@ -157,9 +159,19 @@ class App extends Component {
   }
 
   render() {
-    let content
+    let maincontent
+    let stakecontent
+    let unstakecontent
+    let ownercontent
     if(this.state.loading) {
-      content =
+      maincontent =
+      <div class="wrap">
+      <div class="loading">
+        <div class="bounceball"></div>
+        <div class="text">ETHEREUM IS A LITTLE SLOW...</div>
+      </div>
+    </div>
+      stakecontent =
       <div class="wrap">
       <div class="loading">
         <div class="bounceball"></div>
@@ -167,7 +179,21 @@ class App extends Component {
       </div>
     </div>
     } else {
-      content = <Main
+      maincontent = <Main
+        tetherTokenBalance={this.state.tetherTokenBalance}
+        peceiptTokenBalance={this.state.peceiptTokenBalance}
+        stakeTokens={this.stakeTokens}
+        unstakeTokens={this.unstakeTokens}
+        farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
+        stakerInfo={this.state.stakerInfo}
+        // stakingTimestamp={this.state.stakingTimestamp}
+        tetherTokenInContract={this.state.tetherTokenInContract}
+      />
+        stakecontent = <Stake
         tetherTokenBalance={this.state.tetherTokenBalance}
         peceiptTokenBalance={this.state.peceiptTokenBalance}
         // stakingBalance={this.state.stakingBalance}
@@ -182,6 +208,37 @@ class App extends Component {
         // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
       />
+        unstakecontent = <Unstake
+        tetherTokenBalance={this.state.tetherTokenBalance}
+        peceiptTokenBalance={this.state.peceiptTokenBalance}
+        // stakingBalance={this.state.stakingBalance}
+        stakeTokens={this.stakeTokens}
+        unstakeTokens={this.unstakeTokens}
+        farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
+        stakerInfo={this.state.stakerInfo}
+        // stakingTimestamp={this.state.stakingTimestamp}
+        tetherTokenInContract={this.state.tetherTokenInContract}
+      />
+        ownercontent = <Owner
+        tetherTokenBalance={this.state.tetherTokenBalance}
+        peceiptTokenBalance={this.state.peceiptTokenBalance}
+        // stakingBalance={this.state.stakingBalance}
+        stakeTokens={this.stakeTokens}
+        unstakeTokens={this.unstakeTokens}
+        farmInfo={this.state.farmInfo}
+        withdrawTether={this.withdrawTether}
+        addTether={this.addTether}
+        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
+        transferOwnership={this.transferOwnership}
+        stakerInfo={this.state.stakerInfo}
+        // stakingTimestamp={this.state.stakingTimestamp}
+        tetherTokenInContract={this.state.tetherTokenInContract}
+      />
+
 
       
     }
@@ -205,8 +262,10 @@ class App extends Component {
                   {/* {content} */}
                   <Switch>
                     {/* <Route path="/" exact > {content} </Route> */}
-                    <Route path="/" exact > {content} </Route>
-                    <Route path="/PRTokenDistribution/" exact > {content} </Route>
+                    <Route path="/" exact > {maincontent} </Route>
+                    <Route path="/stake/" exact > {stakecontent} </Route>
+                    <Route path="/unstake/" exact > {unstakecontent} </Route>
+                    <Route path="/owner/" exact > {ownercontent} </Route>
                     {/* <Route path="/PRTokenDistribution/NPXSXEMigration/" exact > {content2} </Route>
                     <Route path="/PRTokenDistribution/PurseDistribution/" exact > {content3} </Route> */}
                   </Switch>
