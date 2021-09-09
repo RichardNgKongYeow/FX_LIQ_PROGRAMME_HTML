@@ -1,26 +1,40 @@
 pragma solidity ^0.8.0;
+
 import "./PeceiptToken.sol";
 import "./TetherToken.sol";
+import "./Ownable.sol";
+import "./CheckContract.sol";
 
-contract DepositWallet {
+contract DepositWallet is CheckContract{
     // All code goes here...
 
     string public name = "Deposit Wallet";
     address public owner;
+    uint256 public mUSDTpool;
+    uint256 public mUSDTfees;
+    uint256 public PFXincirculation;
+    uint256 public mUSDTtoPFX;
+    uint256 public PFXtomUSDT;
+    uint8 stakingFee=3;
+
+
+
     // saving smart contract types as state variables here
     PeceiptToken public peceiptToken;
     TetherToken public tetherToken;
-    uint256 public constant duration = 20 days;
-    uint256 public constant dailyPenaltyRate = 1;
-
     address[] public stakers;
-    // stakingBalance=[address:amount] (similar to)
-    // mapping(address=>uint) public stakingBalance;
-    // hasStaked=[address:True]
-    // mapping(address=>bool) public hasStaked;
-    // mapping(address=>bool) public isStaking;
-    FarmInfo public farmInfo;
+
+    
     mapping(address => StakerInfo) public stakerInfo;
+
+
+    // --- Pool Events ---
+    event mUSDTpoolUpdated(uint _mUSDTpool);
+    event mUSDTfeesUpdated(uint _mUSDTfees);
+    event PFXincirculationUpdated(uint _PFXincirculation);
+    event mUSDTtoPFXUpdated(uint _mUSDTtoPFX);
+    event PFXtomUSDTUpdated(uint _PFXtomUSDT);
+
 
     event Staked(
         address account,
@@ -53,32 +67,17 @@ contract DepositWallet {
         uint penalty
   );
 
-    // event Unstaked(
-    //     address account,
-    //     address token,
-    //     uint amount,
-    //     uint buyrate,
-    //     uint penalty
-    // );
 
     struct StakerInfo {
         uint256 peceiptBalance;
         uint256 stakingTimestamp;
-        uint256 stakingBlock;
         bool hasStaked;
         bool isStaking;
-        // uint256 poolShareRatio;
         uint256 unStakingTimestamp;
     }
 
-    struct FarmInfo {
-        uint256 blockReward;
-        uint256 lastRewardBlock; // Last block number that reward distribution occurs.
-        uint256 tetherSupply; // set in init, total amount of tether staked
-        uint256 peceiptInCirculation; // set in init, total amount of tether staked
-    }
 
-
+    
 
     // constructor(PeceiptToken(type ie smart contract type ie PeceiptToken(sol)) _peceiptToken(address))
     // can just change the contract add of tethertoken here
@@ -87,13 +86,30 @@ contract DepositWallet {
         tetherToken=_tetherToken;
         owner=msg.sender;
     }
-//  TODO this model is a one time stake. it should extend out to diff amounts and diff times staked
-    // 1. stakes tokens & issues lp tokens
+
+    // This isnt equal to the the contract's raw mUSDT balance - upon staking, some of the mUSDT will be deposited into fees segment.
+    // --- External View functions for the pool ---
+    function getUSDTpool() external view returns (uint) {
+        return mUSDTpool;
+    }
+    function getPFXincirculation() external view returns (uint) {
+        return PFXincirculation;
+    }
+    function getmUSDTtoPFX() external view returns (uint) {
+        return mUSDTtoPFX;
+    }
+    function getPFXtomUSDT() external view returns (uint) {
+        return PFXtomUSDT;
+    }
+    // onlyOwner add in function below
+    function getUSDTfees() external view returns (uint) {
+        return mUSDTfees;
+    }
+
+
     function stakeTokens(uint _amount) public{
         require(_amount > 0, "amount cannot be 0");
-        // code goes inside here...
         
-        stakerInfo[msg.sender].stakingTimestamp = block.timestamp;
         // Transfer TetherTokens to this contract for staking
         tetherToken.transferFrom(msg.sender, address(this), _amount);
 
@@ -103,38 +119,40 @@ contract DepositWallet {
         }
 
         // update staking status
+        stakerInfo[msg.sender].stakingTimestamp = block.timestamp;
         stakerInfo[msg.sender].isStaking = true;
         stakerInfo[msg.sender].hasStaked = true;
         
-        
-        uint shareofpool;
         // starting the pool
-        if (farmInfo.peceiptInCirculation==0){
-            shareofpool=_amount;
+        uint shareofpool;
+        if (PFXincirculation==0){
+            shareofpool=((100-stakingFee)*_amount)/100;
         }
         else{
-            uint totalpeceipt=farmInfo.peceiptInCirculation;
-            uint totaltether=farmInfo.tetherSupply;
-            shareofpool=_amount*totalpeceipt/totaltether;
+            shareofpool=(((100-stakingFee)*(_amount*PFXtomUSDT))/100)/(10**18);
         }
-            
 
-
-        // update perceiptincirculation and tethersupply
-        farmInfo.tetherSupply +=_amount;
-
-        // uint256 shareofpool=_amount*(_amount/(_amount+farmInfo.tetherSupply));
-        farmInfo.peceiptInCirculation +=shareofpool;
-        
-
+        // transfer lp token to person and update PFXpool
         peceiptToken.transfer(msg.sender, shareofpool);
+        addToPFXincirculation(shareofpool);
 
         // update staking balance
         // this is to increment the stakingBalance amount in the array
-
         stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance+shareofpool;
         emit Staked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].stakingTimestamp);
+
+        // update mUSDTpool and mUSDTfees
+        uint amountaddTomUSDTpool=((100-stakingFee)*_amount)/100;
+        uint amountaddTomUSDTfees=((stakingFee)*_amount)/100;
+        addTomUSDTpool(amountaddTomUSDTpool);
+        addTomUSDTfees(amountaddTomUSDTfees);
+
+        // update exchange rates TODO need this here?
+        updatemUSDTtoPFX();
+        updatePFXtomUSDT();
+
     }
+    
     // TODO have to burn LP tokens for the pool if they are 0
     // have to change this issuetokens
 
@@ -159,13 +177,9 @@ contract DepositWallet {
         stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
         // require amount greater than 0
         require(balance > 0, "Receipt Token balance cannot be 0");
-        uint256 end = stakerInfo[msg.sender].stakingTimestamp + duration;
-        require(block.timestamp >= end, "too early to withdraw Tokens");
-        uint totalpeceipt=farmInfo.peceiptInCirculation;
-        uint totaltether=farmInfo.tetherSupply;
-        uint256 shareofpool=_amount*totaltether/totalpeceipt;
-        // transfer Mock Tether Tokens  to this contract for staking
-        
+        uint256 shareofpool=(_amount*mUSDTtoPFX)/(10**18);
+
+        // transfer lp Tokens back to this contract for staking
         peceiptToken.transferFrom(msg.sender, address(this), _amount);
         tetherToken.transfer(msg.sender, shareofpool);
         // reset staking balance
@@ -179,8 +193,8 @@ contract DepositWallet {
         }
 
         // update pool info
-        farmInfo.tetherSupply -=shareofpool;
-        farmInfo.peceiptInCirculation -=_amount;
+        deductFrommUSDTpool(shareofpool);
+        deductFromPFXincirculation(_amount);
         emit unStaked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].unStakingTimestamp);
         
     }
@@ -188,7 +202,9 @@ contract DepositWallet {
         require(_amount > 0, "amount cannot be 0");
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transfer(msg.sender, _amount);
-        farmInfo.tetherSupply -=_amount;
+        deductFrommUSDTpool(_amount);
+        updatemUSDTtoPFX();
+        updatePFXtomUSDT();
         emit withdraw(msg.sender, _amount, block.timestamp);
     }
 
@@ -197,84 +213,108 @@ contract DepositWallet {
         require(_amount > 0, "amount cannot be 0");
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transferFrom(msg.sender,address(this), _amount);
-        farmInfo.tetherSupply +=_amount;
+        addTomUSDTpool(_amount);
+        updatemUSDTtoPFX();
+        updatePFXtomUSDT();
         emit add(msg.sender, _amount, block.timestamp);
     }
 
 
-    function unstakeTokensWithPenalty(uint _amount) public {
-        stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
-        uint256 balance = stakerInfo[msg.sender].peceiptBalance;
-        require(balance > 0, "Receipt Token cannot be 0");
-        peceiptToken.transferFrom(msg.sender, address(this), _amount); //return lpx token
+    // function unstakeTokensWithPenalty(uint _amount) public {
+    //     stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
+    //     uint256 balance = stakerInfo[msg.sender].peceiptBalance;
+    //     require(balance > 0, "Receipt Token cannot be 0");
+    //     peceiptToken.transferFrom(msg.sender, address(this), _amount); //return lpx token
         
-        // stopped here
-        uint256 timedifference=duration-(block.timestamp-stakerInfo[msg.sender].stakingTimestamp);
-        uint256 penalty=(timedifference*dailyPenaltyRate)/86400;
+    //     // stopped here
+    //     uint256 timedifference=duration-(block.timestamp-stakerInfo[msg.sender].stakingTimestamp);
+    //     uint256 penalty=(timedifference*dailyPenaltyRate)/86400;
 
-        uint totalpeceipt=farmInfo.peceiptInCirculation;
-        uint totaltether=farmInfo.tetherSupply;
-        uint256 shareofpool=_amount*totaltether/totalpeceipt;
-        uint256 withdrawableAmt=shareofpool*(100-penalty)/100;
-        uint256 penaltyamount=shareofpool-withdrawableAmt;
+    //     uint totalpeceipt=farmInfo.peceiptInCirculation;
+    //     uint totaltether=farmInfo.tetherSupply;
+    //     uint256 shareofpool=_amount*totaltether/totalpeceipt;
+    //     uint256 withdrawableAmt=shareofpool*(100-penalty)/100;
+    //     uint256 penaltyamount=shareofpool-withdrawableAmt;
 
         
 
-        tetherToken.transfer(msg.sender, withdrawableAmt); // Unstake x token
+    //     tetherToken.transfer(msg.sender, withdrawableAmt); // Unstake x token
 
 
 
-        // reset staking balance
-        stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
+    //     // reset staking balance
+    //     stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
 
-        // Update staking status
-        if (stakerInfo[msg.sender].peceiptBalance==0){
-            stakerInfo[msg.sender].isStaking=false;
-        } else {
-            stakerInfo[msg.sender].isStaking=true;
-        }
-
-        // update pool info
-        farmInfo.tetherSupply -=withdrawableAmt;
-        farmInfo.peceiptInCirculation -=_amount;
-
-        emit unstakeWithPenalty(msg.sender, _amount, withdrawableAmt, stakerInfo[msg.sender].unStakingTimestamp, penaltyamount);
-        // getPoolShareRatio();
-    }
-    
-    function transferOwnership(address _to, uint256 _amount) public {
-        require(_amount > 0, "amount cannot be 0");
-        require(_to == address(_to), "Invalid address");
-        require(_amount <= stakerInfo[msg.sender].peceiptBalance, "amount less than LP balance");
-
-        peceiptToken.transferFrom(msg.sender, _to, _amount); //transfer lpXToken
-        // update staker fields
-        stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
-        stakerInfo[_to].peceiptBalance=stakerInfo[_to].peceiptBalance+_amount;
-        stakerInfo[_to].stakingTimestamp=stakerInfo[msg.sender].stakingTimestamp;
-
-
-        if (!stakerInfo[_to].hasStaked) {
-            stakers.push(_to);
-        }
-
-        //Update staking status
-        stakerInfo[_to].isStaking = true;
-        stakerInfo[_to].hasStaked = true;
-
-
-    }
-
-
-    // 4. issuing reward tokens
-
-    // function getPoolTotalBalance() public {
-    //     uint256 totalBalance;
-    //     for (uint256 i = 0; i < stakers.length; i++) {
-    //         address recipient = stakers[i];
-    //         uint256 balance = stakerInfo[recipient].stakingBalance;
-    //         totalBalance = balance + totalBalance;
+    //     // Update staking status
+    //     if (stakerInfo[msg.sender].peceiptBalance==0){
+    //         stakerInfo[msg.sender].isStaking=false;
+    //     } else {
+    //         stakerInfo[msg.sender].isStaking=true;
     //     }
-    //     farmInfo.farmableSupply = totalBalance;
+
+    //     // update pool info
+    //     farmInfo.tetherSupply -=withdrawableAmt;
+    //     farmInfo.peceiptInCirculation -=_amount;
+
+    //     emit unstakeWithPenalty(msg.sender, _amount, withdrawableAmt, stakerInfo[msg.sender].unStakingTimestamp, penaltyamount);
+    //     // getPoolShareRatio();
     // }
+    
+    // function transferOwnership(address _to, uint256 _amount) public {
+    //     require(_amount > 0, "amount cannot be 0");
+    //     require(_to == address(_to), "Invalid address");
+    //     require(_amount <= stakerInfo[msg.sender].peceiptBalance, "amount less than LP balance");
+
+    //     peceiptToken.transferFrom(msg.sender, _to, _amount); //transfer lpXToken
+    //     // update staker fields
+    //     stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
+    //     stakerInfo[_to].peceiptBalance=stakerInfo[_to].peceiptBalance+_amount;
+    //     stakerInfo[_to].stakingTimestamp=stakerInfo[msg.sender].stakingTimestamp;
+
+
+    //     if (!stakerInfo[_to].hasStaked) {
+    //         stakers.push(_to);
+    //     }
+
+    //     //Update staking status
+    //     stakerInfo[_to].isStaking = true;
+    //     stakerInfo[_to].hasStaked = true;
+
+
+    // }
+
+    // --- Pool functionality ---
+    function addTomUSDTpool(uint _amount) private{
+        mUSDTpool=mUSDTpool+_amount;
+        emit mUSDTpoolUpdated(mUSDTpool);
+    }
+    function deductFrommUSDTpool(uint _amount) private{
+        mUSDTpool=mUSDTpool-_amount;
+        emit mUSDTpoolUpdated(mUSDTpool);
+    }
+    function addToPFXincirculation(uint _amount)private{
+        PFXincirculation=PFXincirculation+_amount;
+        emit PFXincirculationUpdated(PFXincirculation);
+    }
+    function deductFromPFXincirculation(uint _amount)private{
+        PFXincirculation=PFXincirculation-_amount;
+        emit PFXincirculationUpdated(PFXincirculation);
+    }
+    function addTomUSDTfees(uint _amount) private{
+        mUSDTfees=mUSDTfees+_amount;
+        emit mUSDTfeesUpdated(mUSDTfees);
+    }
+    function deductFrommUSDTfees(uint _amount) private{
+        mUSDTfees=mUSDTfees-_amount;
+        emit mUSDTfeesUpdated(mUSDTfees);
+    }
+    function updatemUSDTtoPFX() private {
+        mUSDTtoPFX=(mUSDTpool*10**18)/PFXincirculation;
+        emit mUSDTtoPFXUpdated(mUSDTtoPFX);
+    }
+    function updatePFXtomUSDT() private {
+        PFXtomUSDT=(PFXincirculation*10**18)/mUSDTpool;
+        emit mUSDTtoPFXUpdated(PFXtomUSDT);
+    }
+        
 }
