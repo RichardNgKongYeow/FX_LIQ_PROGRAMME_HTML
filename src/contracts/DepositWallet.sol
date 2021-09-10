@@ -6,8 +6,8 @@ import "./Ownable.sol";
 import "./CheckContract.sol";
 
 contract DepositWallet is CheckContract{
-    // All code goes here...
 
+    // ---Contract Variables---
     string public name = "Deposit Wallet";
     address public owner;
     uint256 public mUSDTpool;
@@ -19,7 +19,7 @@ contract DepositWallet is CheckContract{
 
 
 
-    // saving smart contract types as state variables here
+    // ---Smart Contracts---
     PeceiptToken public peceiptToken;
     TetherToken public tetherToken;
 
@@ -32,7 +32,7 @@ contract DepositWallet is CheckContract{
     event mUSDTtoPFXUpdated(uint _mUSDTtoPFX);
     event PFXtomUSDTUpdated(uint _PFXtomUSDT);
 
-
+    // ---User Events---
     event Staked(
         address account,
         uint tetherDeposited,
@@ -46,20 +46,33 @@ contract DepositWallet is CheckContract{
         uint tetherReceived,
         uint timeStamp
   );
-    event withdraw(
+    
+    //--- Owner Events---   
+    event withdrawFromPool(
         address account,
         uint tetherWithdrawn,
         uint timeStamp
   );
-    event add(
+    event addToPool(
         address account,
         uint tetherAdded,
         uint timeStamp
   );
+    event transferFromFeesToPool(
+        address account,
+        uint tetherTransferred,
+        uint timeStamp
+  );
+    event withdrawFromFees(
+        address account,
+        uint tetherWithdrawn,
+        uint timeStamp
+  );
 
     // TODO add in only owner modifier and contract inheritance
+    // TODO mint and burn PFX or just set it to a lot from the start?
     // constructor(PeceiptToken(type ie smart contract type ie PeceiptToken(sol)) _peceiptToken(address))
-    // can just change the contract add of tethertoken here
+    // TODO can just change the contract add of tethertoken here
     constructor(PeceiptToken _peceiptToken, TetherToken _tetherToken) public {
         peceiptToken=_peceiptToken;
         tetherToken=_tetherToken;
@@ -80,18 +93,16 @@ contract DepositWallet is CheckContract{
     function getPFXtomUSDT() external view returns (uint) {
         return PFXtomUSDT;
     }
-    // onlyOwner add in function below
     function getUSDTfees() external view returns (uint) {
         return mUSDTfees;
     }
 
-
+    // ---User Functions---
     function stakeTokens(uint _amount) public{
         require(_amount > 0, "amount cannot be 0");
         
         // Transfer TetherTokens to this contract for staking
         tetherToken.transferFrom(msg.sender, address(this), _amount);
-
         
         // starting the pool
         uint shareofpool;
@@ -142,7 +153,7 @@ contract DepositWallet is CheckContract{
         deductFrommUSDTpool(_amount);
         updatemUSDTtoPFX();
         updatePFXtomUSDT();
-        emit withdraw(msg.sender, _amount, block.timestamp);
+        emit withdrawFromPool(msg.sender, _amount, block.timestamp);
     }
 
     function addTetherToPool (uint _amount) public{
@@ -152,7 +163,7 @@ contract DepositWallet is CheckContract{
         addTomUSDTpool(_amount);
         updatemUSDTtoPFX();
         updatePFXtomUSDT();
-        emit add(msg.sender, _amount, block.timestamp);
+        emit addToPool(msg.sender, _amount, block.timestamp);
     }
 
     function transferTetherFromFeesToPool (uint _amount) public{
@@ -162,6 +173,7 @@ contract DepositWallet is CheckContract{
         addTomUSDTpool(_amount);
         updatemUSDTtoPFX();
         updatePFXtomUSDT();
+        emit transferFromFeesToPool(msg.sender, _amount, block.timestamp);
     }
     function withdrawTetherFromFees (uint _amount) public{
         require(_amount > 0, "amount cannot be 0");
@@ -170,6 +182,7 @@ contract DepositWallet is CheckContract{
         deductFrommUSDTfees(_amount);
         updatemUSDTtoPFX();
         updatePFXtomUSDT();
+        emit withdrawFromFees(msg.sender, _amount, block.timestamp);
     }
 
 

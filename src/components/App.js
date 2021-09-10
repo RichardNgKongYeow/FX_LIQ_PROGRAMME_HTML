@@ -158,8 +158,8 @@ class App extends Component {
       mUSDTpool:'0',
       mUSDTfees:'0',
       PFXincirculation:'0',
-      mUSDTtoPFX:'1',
-      PFXtomUSDT:'1',
+      mUSDTtoPFX:'0',
+      PFXtomUSDT:'0',
       stakingFee:'0',
       loading: true,
 

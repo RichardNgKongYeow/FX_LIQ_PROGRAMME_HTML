@@ -7,7 +7,9 @@ import {
   Bars,
   NavMenu,
   NavBtn,
-  NavBtnLink
+  NavBtnLink0,
+  NavBtnLink1,
+  NavBtnLink2,
 } from './NavMenu'
 
 
@@ -24,15 +26,15 @@ class Navbar extends Component {
           <img src={fx_token} width="30" height="30" className="d-inline-block align-top" alt="" />
           &nbsp; Trading Wallet
         </a>
-        <NavBtnLink to='/Stake' activeStyle>
+        <NavBtnLink0 to='/Stake' activeStyle>
                   Stake
-              </NavBtnLink>
-              <NavBtnLink to='/Unstake' activeStyle>
+              </NavBtnLink0>
+              <NavBtnLink1 to='/Unstake' activeStyle>
                   Unstake
-              </NavBtnLink>
-              <NavBtnLink to='/Owner' activeStyle>
+              </NavBtnLink1>
+              <NavBtnLink2 to='/Owner' activeStyle>
                   Owner
-              </NavBtnLink>
+              </NavBtnLink2>
           <ul className="navbar-nav px-3">
           <li className="nav-item text-nowrap d-none d-sm-none d-sm-block">
             <small className="text-secondary">
