@@ -24,7 +24,6 @@ contract DepositWallet is CheckContract{
     TetherToken public tetherToken;
 
 
-
     // --- Pool Events ---
     event mUSDTpoolUpdated(uint _mUSDTpool);
     event mUSDTfeesUpdated(uint _mUSDTfees);
