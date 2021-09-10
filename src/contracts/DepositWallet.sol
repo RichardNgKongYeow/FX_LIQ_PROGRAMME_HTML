@@ -15,17 +15,14 @@ contract DepositWallet is CheckContract{
     uint256 public PFXincirculation;
     uint256 public mUSDTtoPFX;
     uint256 public PFXtomUSDT;
-    uint8 stakingFee=3;
+    uint8 public stakingFee=3;
 
 
 
     // saving smart contract types as state variables here
     PeceiptToken public peceiptToken;
     TetherToken public tetherToken;
-    address[] public stakers;
 
-    
-    mapping(address => StakerInfo) public stakerInfo;
 
 
     // --- Pool Events ---
@@ -59,26 +56,8 @@ contract DepositWallet is CheckContract{
         uint tetherAdded,
         uint timeStamp
   );
-    event unstakeWithPenalty(
-        address account,
-        uint lpDeposited,
-        uint tetherReceived,
-        uint timeStamp,
-        uint penalty
-  );
 
-
-    struct StakerInfo {
-        uint256 peceiptBalance;
-        uint256 stakingTimestamp;
-        bool hasStaked;
-        bool isStaking;
-        uint256 unStakingTimestamp;
-    }
-
-
-    
-
+    // TODO add in only owner modifier and contract inheritance
     // constructor(PeceiptToken(type ie smart contract type ie PeceiptToken(sol)) _peceiptToken(address))
     // can just change the contract add of tethertoken here
     constructor(PeceiptToken _peceiptToken, TetherToken _tetherToken) public {
@@ -113,15 +92,6 @@ contract DepositWallet is CheckContract{
         // Transfer TetherTokens to this contract for staking
         tetherToken.transferFrom(msg.sender, address(this), _amount);
 
-        // Add user to stakers array *only if they haven't staked already
-        if(!stakerInfo[msg.sender].hasStaked){
-            stakers.push(msg.sender);
-        }
-
-        // update staking status
-        stakerInfo[msg.sender].stakingTimestamp = block.timestamp;
-        stakerInfo[msg.sender].isStaking = true;
-        stakerInfo[msg.sender].hasStaked = true;
         
         // starting the pool
         uint shareofpool;
@@ -135,11 +105,7 @@ contract DepositWallet is CheckContract{
         // transfer lp token to person and update PFXpool
         peceiptToken.transfer(msg.sender, shareofpool);
         addToPFXincirculation(shareofpool);
-
-        // update staking balance
-        // this is to increment the stakingBalance amount in the array
-        stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance+shareofpool;
-        emit Staked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].stakingTimestamp);
+        emit Staked(msg.sender, _amount, shareofpool, block.timestamp);
 
         // update mUSDTpool and mUSDTfees
         uint amountaddTomUSDTpool=((100-stakingFee)*_amount)/100;
@@ -152,53 +118,24 @@ contract DepositWallet is CheckContract{
         updatePFXtomUSDT();
 
     }
-    
-    // TODO have to burn LP tokens for the pool if they are 0
-    // have to change this issuetokens
 
-    // 2. issuing reward tokens right now logic is that u get 1 for every 1 you stake, no block time basis
-    function issueTokens()public{
-        // only owner can call this function
-        require(msg.sender==owner, "caller must be the owner");
-
-        // issue tokens to all stakers
-        for (uint i=0; i<stakers.length; i++){
-            address recipient = stakers[i];
-            uint balance = stakerInfo[recipient].peceiptBalance;
-            if(balance > 0){
-                peceiptToken.transfer(recipient, balance);
-            }
-        }
-    }
-    // 3. unstake tokens
     function unstakeTokens(uint _amount) public{
-        // fetch staking balance
-        uint balance=stakerInfo[msg.sender].peceiptBalance;
-        stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
-        // require amount greater than 0
-        require(balance > 0, "Receipt Token balance cannot be 0");
+        require(_amount > 0, "amount cannot be 0");
         uint256 shareofpool=(_amount*mUSDTtoPFX)/(10**18);
 
         // transfer lp Tokens back to this contract for staking
         peceiptToken.transferFrom(msg.sender, address(this), _amount);
         tetherToken.transfer(msg.sender, shareofpool);
-        // reset staking balance
-        stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
-
-        // Update staking status
-        if (stakerInfo[msg.sender].peceiptBalance==0){
-            stakerInfo[msg.sender].isStaking=false;
-        } else {
-            stakerInfo[msg.sender].isStaking=true;
-        }
 
         // update pool info
         deductFrommUSDTpool(shareofpool);
         deductFromPFXincirculation(_amount);
-        emit unStaked(msg.sender, _amount, shareofpool, stakerInfo[msg.sender].unStakingTimestamp);
+        emit unStaked(msg.sender, _amount, shareofpool, block.timestamp);
         
     }
-    function withdrawTether (uint _amount) public{
+
+    // ---OnlyOwner Functions---
+    function withdrawTetherFromPool (uint _amount) public{
         require(_amount > 0, "amount cannot be 0");
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transfer(msg.sender, _amount);
@@ -208,8 +145,7 @@ contract DepositWallet is CheckContract{
         emit withdraw(msg.sender, _amount, block.timestamp);
     }
 
-    // TODO take this out
-    function addTether (uint _amount) public{
+    function addTetherToPool (uint _amount) public{
         require(_amount > 0, "amount cannot be 0");
         require(msg.sender==owner, "caller must be the owner");
         tetherToken.transferFrom(msg.sender,address(this), _amount);
@@ -219,69 +155,23 @@ contract DepositWallet is CheckContract{
         emit add(msg.sender, _amount, block.timestamp);
     }
 
+    function transferTetherFromFeesToPool (uint _amount) public{
+        require(_amount > 0, "amount cannot be 0");
+        require(msg.sender==owner, "caller must be the owner");
+        deductFrommUSDTfees(_amount);
+        addTomUSDTpool(_amount);
+        updatemUSDTtoPFX();
+        updatePFXtomUSDT();
+    }
+    function withdrawTetherFromFees (uint _amount) public{
+        require(_amount > 0, "amount cannot be 0");
+        require(msg.sender==owner, "caller must be the owner");
+        tetherToken.transfer(msg.sender, _amount);
+        deductFrommUSDTfees(_amount);
+        updatemUSDTtoPFX();
+        updatePFXtomUSDT();
+    }
 
-    // function unstakeTokensWithPenalty(uint _amount) public {
-    //     stakerInfo[msg.sender].unStakingTimestamp=block.timestamp;
-    //     uint256 balance = stakerInfo[msg.sender].peceiptBalance;
-    //     require(balance > 0, "Receipt Token cannot be 0");
-    //     peceiptToken.transferFrom(msg.sender, address(this), _amount); //return lpx token
-        
-    //     // stopped here
-    //     uint256 timedifference=duration-(block.timestamp-stakerInfo[msg.sender].stakingTimestamp);
-    //     uint256 penalty=(timedifference*dailyPenaltyRate)/86400;
-
-    //     uint totalpeceipt=farmInfo.peceiptInCirculation;
-    //     uint totaltether=farmInfo.tetherSupply;
-    //     uint256 shareofpool=_amount*totaltether/totalpeceipt;
-    //     uint256 withdrawableAmt=shareofpool*(100-penalty)/100;
-    //     uint256 penaltyamount=shareofpool-withdrawableAmt;
-
-        
-
-    //     tetherToken.transfer(msg.sender, withdrawableAmt); // Unstake x token
-
-
-
-    //     // reset staking balance
-    //     stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
-
-    //     // Update staking status
-    //     if (stakerInfo[msg.sender].peceiptBalance==0){
-    //         stakerInfo[msg.sender].isStaking=false;
-    //     } else {
-    //         stakerInfo[msg.sender].isStaking=true;
-    //     }
-
-    //     // update pool info
-    //     farmInfo.tetherSupply -=withdrawableAmt;
-    //     farmInfo.peceiptInCirculation -=_amount;
-
-    //     emit unstakeWithPenalty(msg.sender, _amount, withdrawableAmt, stakerInfo[msg.sender].unStakingTimestamp, penaltyamount);
-    //     // getPoolShareRatio();
-    // }
-    
-    // function transferOwnership(address _to, uint256 _amount) public {
-    //     require(_amount > 0, "amount cannot be 0");
-    //     require(_to == address(_to), "Invalid address");
-    //     require(_amount <= stakerInfo[msg.sender].peceiptBalance, "amount less than LP balance");
-
-    //     peceiptToken.transferFrom(msg.sender, _to, _amount); //transfer lpXToken
-    //     // update staker fields
-    //     stakerInfo[msg.sender].peceiptBalance=stakerInfo[msg.sender].peceiptBalance-_amount;
-    //     stakerInfo[_to].peceiptBalance=stakerInfo[_to].peceiptBalance+_amount;
-    //     stakerInfo[_to].stakingTimestamp=stakerInfo[msg.sender].stakingTimestamp;
-
-
-    //     if (!stakerInfo[_to].hasStaked) {
-    //         stakers.push(_to);
-    //     }
-
-    //     //Update staking status
-    //     stakerInfo[_to].isStaking = true;
-    //     stakerInfo[_to].hasStaked = true;
-
-
-    // }
 
     // --- Pool functionality ---
     function addTomUSDTpool(uint _amount) private{

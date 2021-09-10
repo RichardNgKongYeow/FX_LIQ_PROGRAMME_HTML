@@ -56,15 +56,22 @@ class App extends Component {
       const tetherToken = new web3.eth.Contract(TetherToken.abi, tetherTokenData.address)
       const depositWallet = new web3.eth.Contract(DepositWallet.abi, depositWalletData.address)
       this.setState({ depositWallet })
-      // let stakingBalance = await depositWallet.methods.stakingBalance(this.state.account).call()
-      // this.setState({ stakingBalance: stakingBalance.toString() })
+      console.log(depositWallet)
 
-      let farmInfo=await depositWallet.methods.farmInfo().call()
-      this.setState({ farmInfo })
-      let stakerInfo = await depositWallet.methods.stakerInfo(this.state.account).call()
-      this.setState({ stakerInfo })
       let tetherTokenInContract = await tetherToken.methods.balanceOf(depositWalletData.address).call()
+      let mUSDTpool=await depositWallet.methods.mUSDTpool().call()
+      let mUSDTfees=await depositWallet.methods.mUSDTfees().call()
+      let PFXincirculation= await depositWallet.methods.PFXincirculation().call()
+      let mUSDTtoPFX= await depositWallet.methods.mUSDTtoPFX().call()
+      let PFXtomUSDT= await depositWallet.methods.PFXtomUSDT().call()
+      let stakingFee= await depositWallet.methods.stakingFee().call()
       this.setState({ tetherTokenInContract })
+      this.setState({ mUSDTpool})
+      this.setState({ mUSDTfees})
+      this.setState({ PFXincirculation})
+      this.setState({ mUSDTtoPFX})
+      this.setState({ PFXtomUSDT})
+      this.setState({ stakingFee})
     } else {
       window.alert('DepositWallet contract not deployed to detected network.')
     }
@@ -103,42 +110,40 @@ class App extends Component {
       })
     })
   }
-  unstakeTokensWithPenalty = (amount) => {
-    this.setState({ loading: true })
-    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-        this.setState({ loading: false })
 
-      })
-    })
-  }
-  transferOwnership = (amount) => {
+  withdrawTetherFromPool = (amount) => {
     this.setState({ loading: true })
-    this.state.peceiptToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-      this.state.depositWallet.methods.unstakeTokensWithPenalty(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-        this.setState({ loading: false })
-
-      })
-    })
-  }
-  withdrawTether = (amount) => {
-    this.setState({ loading: true })
-    
-    this.state.depositWallet.methods.withdrawTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.depositWallet.methods.withdrawTetherFromPool(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
       this.setState({ loading: false })
 
       })
   
   }
-  addTether = (amount) => {
+  addTetherToPool = (amount) => {
     this.setState({ loading: true })
     this.state.tetherToken.methods.approve(this.state.depositWallet._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-    this.state.depositWallet.methods.addTether(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.depositWallet.methods.addTetherToPool(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
       this.setState({ loading: false })
 
       })
     })
   }
+  transferTetherFromFeesToPool = (amount) => {
+    this.setState({ loading: true })
+    this.state.depositWallet.methods.transferTetherFromFeesToPool(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+      })
+    }
+
+  withdrawTetherFromFees = (amount) => {
+    this.setState({ loading: true })
+    this.state.depositWallet.methods.withdrawTetherFromFees(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.setState({ loading: false })
+
+      })
+    
+    }
+  
   
   constructor(props) {
     super(props)
@@ -150,9 +155,12 @@ class App extends Component {
       tetherTokenBalance: '0',
       peceiptTokenBalance: '0',
       tetherTokenInContract: '0',
-      // stakingBalance: '0',
-      farmInfo:'0',
-      stakerInfo: '0',
+      mUSDTpool:'0',
+      mUSDTfees:'0',
+      PFXincirculation:'0',
+      mUSDTtoPFX:'1',
+      PFXtomUSDT:'1',
+      stakingFee:'0',
       loading: true,
 
     }
@@ -184,59 +192,54 @@ class App extends Component {
         peceiptTokenBalance={this.state.peceiptTokenBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
-        farmInfo={this.state.farmInfo}
-        withdrawTether={this.withdrawTether}
-        addTether={this.addTether}
-        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
-        transferOwnership={this.transferOwnership}
-        stakerInfo={this.state.stakerInfo}
-        // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
+        mUSDTpool={this.state.mUSDTpool}
+        mUSDTfees={this.state.mUSDTfees}
+        PFXincirculation={this.state.PFXincirculation}
+        mUSDTtoPFX={this.state.mUSDTtoPFX}
+        PFXtomUSDT={this.state.PFXtomUSDT}
+        stakingFee={this.state.stakingFee}
       />
         stakecontent = <Stake
         tetherTokenBalance={this.state.tetherTokenBalance}
         peceiptTokenBalance={this.state.peceiptTokenBalance}
-        // stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
-        farmInfo={this.state.farmInfo}
-        withdrawTether={this.withdrawTether}
-        addTether={this.addTether}
-        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
-        transferOwnership={this.transferOwnership}
-        stakerInfo={this.state.stakerInfo}
-        // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
+        mUSDTpool={this.state.mUSDTpool}
+        mUSDTfees={this.state.mUSDTfees}
+        PFXincirculation={this.state.PFXincirculation}
+        mUSDTtoPFX={this.state.mUSDTtoPFX}
+        PFXtomUSDT={this.state.PFXtomUSDT}
+        stakingFee={this.state.stakingFee}
       />
         unstakecontent = <Unstake
         tetherTokenBalance={this.state.tetherTokenBalance}
         peceiptTokenBalance={this.state.peceiptTokenBalance}
-        // stakingBalance={this.state.stakingBalance}
         stakeTokens={this.stakeTokens}
         unstakeTokens={this.unstakeTokens}
-        farmInfo={this.state.farmInfo}
-        withdrawTether={this.withdrawTether}
-        addTether={this.addTether}
-        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
-        transferOwnership={this.transferOwnership}
-        stakerInfo={this.state.stakerInfo}
-        // stakingTimestamp={this.state.stakingTimestamp}
         tetherTokenInContract={this.state.tetherTokenInContract}
+        mUSDTpool={this.state.mUSDTpool}
+        mUSDTfees={this.state.mUSDTfees}
+        PFXincirculation={this.state.PFXincirculation}
+        mUSDTtoPFX={this.state.mUSDTtoPFX}
+        PFXtomUSDT={this.state.PFXtomUSDT}
+        stakingFee={this.state.stakingFee}
       />
         ownercontent = <Owner
         tetherTokenBalance={this.state.tetherTokenBalance}
         peceiptTokenBalance={this.state.peceiptTokenBalance}
-        // stakingBalance={this.state.stakingBalance}
-        stakeTokens={this.stakeTokens}
-        unstakeTokens={this.unstakeTokens}
-        farmInfo={this.state.farmInfo}
-        withdrawTether={this.withdrawTether}
-        addTether={this.addTether}
-        unstakeTokensWithPenalty={this.unstakeTokensWithPenalty}
-        transferOwnership={this.transferOwnership}
-        stakerInfo={this.state.stakerInfo}
-        // stakingTimestamp={this.state.stakingTimestamp}
+        withdrawTetherFromPool={this.withdrawTetherFromPool}
+        addTetherToPool={this.addTetherToPool}
+        transferTetherFromFeesToPool={this.transferTetherFromFeesToPool}
+        withdrawTetherFromFees={this.withdrawTetherFromFees}
         tetherTokenInContract={this.state.tetherTokenInContract}
+        mUSDTpool={this.state.mUSDTpool}
+        mUSDTfees={this.state.mUSDTfees}
+        PFXincirculation={this.state.PFXincirculation}
+        mUSDTtoPFX={this.state.mUSDTtoPFX}
+        PFXtomUSDT={this.state.PFXtomUSDT}
+        stakingFee={this.state.stakingFee}
       />
 
 

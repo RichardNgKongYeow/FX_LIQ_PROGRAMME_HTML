@@ -8,13 +8,6 @@ class Owner extends Component {
   render() {
     return (
       <div id="content" className="mt-3">
-          {/* <div className="text-center">
-            <ButtonGroup>
-                <Button variant="contained" color="default" component={Link} to="/PRTokenDistribution/">Liquidity Pool</Button>
-                <Button variant="outlined" color="default" component={Link} to="/PRTokenDistribution/NPXSXEMigration/">Migrate NPXSXEM</Button>
-                <Button variant="outlined" color="default" component={Link} to="/PRTokenDistribution/PurseDistribution/">Purse Distribution</Button>
-            </ButtonGroup>
-        </div> */}
 
         
 
@@ -27,10 +20,10 @@ class Owner extends Component {
                 let amount
                 amount = this.input.value.toString()
                 amount = window.web3.utils.toWei(amount, 'Ether')
-                this.props.withdrawTether(amount)
+                this.props.withdrawTetherFromPool(amount)
               }}>
               <div>
-                <label className="float-left"><b>Add/Withdraw Tether Tokens</b></label>
+                <label className="float-left"><b>Add/Withdraw Tether Tokens From Pool</b></label>
                 <span className="float-right text-muted">
                   mUSDT Balance: {window.web3.utils.fromWei(this.props.tetherTokenBalance, 'Ether')}
                 </span>
@@ -49,16 +42,34 @@ class Owner extends Component {
                   </div>
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary btn-block btn-lg">Withdraw mUSDT!</button>
+              <button type="submit" className="btn btn-primary btn-block btn-lg">Withdraw mUSDT From Pool!</button>
               <button type="submit" className="btn btn-primary btn-block btn-lg"
               onClick={(event) => {
                 event.preventDefault()
                 let amount
                 amount = this.input.value.toString()
                 amount = window.web3.utils.toWei(amount, 'Ether')
-                this.props.addTether(amount)
+                this.props.addTetherToPool(amount)
               }}>
-              Add mUSDT!</button>
+              Add mUSDT To Pool!</button>
+              <button type="submit" className="btn btn-primary btn-block btn-lg"
+              onClick={(event) => {
+                event.preventDefault()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                this.props.transferTetherFromFeesToPool(amount)
+              }}>
+              Transfer mUSDT From Fees to Pool!</button>
+              <button type="submit" className="btn btn-primary btn-block btn-lg"
+              onClick={(event) => {
+                event.preventDefault()
+                let amount
+                amount = this.input.value.toString()
+                amount = window.web3.utils.toWei(amount, 'Ether')
+                this.props.withdrawTetherFromFees(amount)
+              }}>
+              Withdraw Tether From Fees!</button>
             </form>
             
 
@@ -73,17 +84,19 @@ class Owner extends Component {
             <tr>
               <th scope="col">Total Tether Staked In Pool</th>
               <th scope="col">Total Receipt Token In Ciculation</th>
-              <th scope="col">Lock In Duration</th>
+              <th scope="col">Total Tether In Fees Pool</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>{window.web3.utils.fromWei(this.props.farmInfo.tetherSupply, 'Ether')} mUSDT</td>
-              <td>{window.web3.utils.fromWei(this.props.farmInfo.peceiptInCirculation, 'Ether')} PFX</td>
-              <td>20 Days</td>
+              <td>{window.web3.utils.fromWei(this.props.mUSDTpool, 'Ether')} mUSDT</td>
+              <td>{window.web3.utils.fromWei(this.props.PFXincirculation, 'Ether')} PFX</td>
+              <td>{window.web3.utils.fromWei(this.props.mUSDTfees, 'Ether')} mUSDT</td>
+
 
             </tr>
           </tbody>
+
         </table>
         <table className="table table-borderless text-muted text-center">
           <thead>
@@ -91,19 +104,34 @@ class Owner extends Component {
 
               <th scope="col">1 mUSDT = </th>
               <th scope="col">1 PFX = </th>
-              <th scope="col">Tether Tokens In Contract</th>
+              <th scope="col">Staking Fee</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               
-              <td>{(this.props.farmInfo.peceiptInCirculation/this.props.farmInfo.tetherSupply)} PFX</td>
-              <td>{(this.props.farmInfo.tetherSupply/this.props.farmInfo.peceiptInCirculation)} mUSDT</td>
-              <td>{window.web3.utils.fromWei(this.props.tetherTokenInContract, 'Ether')} mUSDT</td>
+              <td>{window.web3.utils.fromWei(this.props.PFXtomUSDT, 'Ether')} PFX</td>
+              <td>{window.web3.utils.fromWei(this.props.mUSDTtoPFX, 'Ether')} mUSDT</td>
+              <td>{this.props.stakingFee} %</td>
             </tr>
           </tbody>
         </table>
-              
+        <table className="table table-borderless text-muted text-center">
+        <thead>
+            <tr>
+              <th scope="col">Total Tether Staked In Contract</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{window.web3.utils.fromWei(this.props.tetherTokenInContract, 'Ether')} mUSDT</td>
+
+
+
+            </tr>
+          </tbody>
+          </table>
       </div>
       
     );
