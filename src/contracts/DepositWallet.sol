@@ -5,11 +5,11 @@ import "./TetherToken.sol";
 import "./Ownable.sol";
 import "./CheckContract.sol";
 
-contract DepositWallet is CheckContract{
+contract DepositWallet is CheckContract, Ownable{
 
     // ---Contract Variables---
     string public name = "Deposit Wallet";
-    address public owner;
+    address public ownerAdd;
     uint256 public mUSDTpool;
     uint256 public mUSDTfees;
     uint256 public PFXincirculation;
@@ -68,14 +68,14 @@ contract DepositWallet is CheckContract{
         uint timeStamp
   );
 
-    // TODO add in only owner modifier and contract inheritance
+
     // TODO mint and burn PFX or just set it to a lot from the start?
     // constructor(PeceiptToken(type ie smart contract type ie PeceiptToken(sol)) _peceiptToken(address))
     // TODO can just change the contract add of tethertoken here
     constructor(PeceiptToken _peceiptToken, TetherToken _tetherToken) public {
         peceiptToken=_peceiptToken;
         tetherToken=_tetherToken;
-        owner=msg.sender;
+        ownerAdd=msg.sender;
     }
 
     // This isnt equal to the the contract's raw mUSDT balance - upon staking, some of the mUSDT will be deposited into fees segment.
@@ -96,9 +96,14 @@ contract DepositWallet is CheckContract{
         return mUSDTfees;
     }
 
-    // ---User Functions---
-    function stakeTokens(uint _amount) public{
+    modifier amountGT0 (uint _amount){
         require(_amount > 0, "amount cannot be 0");
+        _;
+    }
+
+    // ---User Functions---
+    function stakeTokens(uint _amount) public amountGT0(_amount) {
+        
         
         // Transfer TetherTokens to this contract for staking
         tetherToken.transferFrom(msg.sender, address(this), _amount);
@@ -129,8 +134,8 @@ contract DepositWallet is CheckContract{
 
     }
 
-    function unstakeTokens(uint _amount) public{
-        require(_amount > 0, "amount cannot be 0");
+    function unstakeTokens(uint _amount) public amountGT0(_amount){
+        
         uint256 shareofpool=(_amount*mUSDTtoPFX)/(10**18);
 
         // transfer lp Tokens back to this contract for staking
@@ -145,9 +150,7 @@ contract DepositWallet is CheckContract{
     }
 
     // ---OnlyOwner Functions---
-    function withdrawTetherFromPool (uint _amount) public{
-        require(_amount > 0, "amount cannot be 0");
-        require(msg.sender==owner, "caller must be the owner");
+    function withdrawTetherFromPool (uint _amount) public amountGT0(_amount) onlyOwner{
         tetherToken.transfer(msg.sender, _amount);
         deductFrommUSDTpool(_amount);
         updatemUSDTtoPFX();
@@ -155,9 +158,7 @@ contract DepositWallet is CheckContract{
         emit withdrawFromPool(msg.sender, _amount, block.timestamp);
     }
 
-    function addTetherToPool (uint _amount) public{
-        require(_amount > 0, "amount cannot be 0");
-        require(msg.sender==owner, "caller must be the owner");
+    function addTetherToPool (uint _amount) public amountGT0(_amount) onlyOwner{
         tetherToken.transferFrom(msg.sender,address(this), _amount);
         addTomUSDTpool(_amount);
         updatemUSDTtoPFX();
@@ -165,18 +166,16 @@ contract DepositWallet is CheckContract{
         emit addToPool(msg.sender, _amount, block.timestamp);
     }
 
-    function transferTetherFromFeesToPool (uint _amount) public{
-        require(_amount > 0, "amount cannot be 0");
-        require(msg.sender==owner, "caller must be the owner");
+    function transferTetherFromFeesToPool (uint _amount) public amountGT0(_amount) onlyOwner {
+
         deductFrommUSDTfees(_amount);
         addTomUSDTpool(_amount);
         updatemUSDTtoPFX();
         updatePFXtomUSDT();
         emit transferFromFeesToPool(msg.sender, _amount, block.timestamp);
     }
-    function withdrawTetherFromFees (uint _amount) public{
-        require(_amount > 0, "amount cannot be 0");
-        require(msg.sender==owner, "caller must be the owner");
+    function withdrawTetherFromFees (uint _amount) public amountGT0(_amount) onlyOwner {
+
         tetherToken.transfer(msg.sender, _amount);
         deductFrommUSDTfees(_amount);
         updatemUSDTtoPFX();
