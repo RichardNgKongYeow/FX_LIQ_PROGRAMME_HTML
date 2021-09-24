@@ -40,7 +40,7 @@ contract('DepositWallet', ([owner, investor]) => {
     })
   })
 
-  describe('Token Farm deployment', async () => {
+  describe('Deposit Wallet deployment', async () => {
     it('has a name', async () => {
       const name = await depositWallet.name()
       assert.equal(name, 'Deposit Wallet')
@@ -70,11 +70,16 @@ contract('DepositWallet', ([owner, investor]) => {
       assert.equal(result.toString(), tokens('0'), 'investor Mock Tether wallet balance correct after staking')
 
       result = await tetherToken.balanceOf(depositWallet.address)
-      assert.equal(result.toString(), tokens('100'), 'Token Farm Mock Tether balance correct after staking')
+      assert.equal(result.toString(), tokens('100'), 'Deposit Wallet Mock Tether balance correct after staking')
 
-      result = await depositWallet.stakingBalance(investor)
-      assert.equal(result.toString(), tokens('100'), 'investor staking balance correct after staking')
+      // check if deposit wallet correctly divides the amount
 
+      result = await depositWallet.mUSDTpool().call()
+      assert.equal(result.toString(), tokens('97'), 'mUSDTpool Mock Tether balance correct after staking')
+      result = await depositWallet.mUSDTfees().call()
+      assert.equal(result.toString(), tokens('3'), 'mUSDTfees Mock Tether balance correct after staking')
+
+      
       result = await depositWallet.isStaking(investor)
       assert.equal(result.toString(), 'true', 'investor staking status correct after staking')
 
